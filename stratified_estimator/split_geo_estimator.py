@@ -138,7 +138,7 @@ for i in range(dists_sorted.shape[1]):
         strat_radius = -1.
 
     else:
-        scaling_coeff_1,dimension_1,ricci_1 = geo_estimator(radii[1:strat_idx], volumes[1:strat_idx], npts, args)
+        scaling_coeff_1,dimension_1,ricci_1 = geo_estimator(radii[vol_min:strat_idx], volumes[vol_min:strat_idx], npts, args)
         scaling_coeff_2,dimension_2,ricci_2 = geo_estimator(radii[strat_idx:vol_max], volumes[strat_idx:vol_max], npts, args)
 
         strat_radius = radii[strat_idx]
