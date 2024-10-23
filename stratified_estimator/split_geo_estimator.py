@@ -52,7 +52,7 @@ def stratification_test(radii, volumes, ws=10, alpha=1e-3):
     '''
     Locate the index of the smallest radius stratification using a sliding window Welch t-test
 
-    Inputs: radii : np.array of radius values
+    Inputs: radii : np.array of radius values (assumed to be sorted in ascending order)
             volumes : np.array of volume values
             ws : window size, defaults to 10 samples
             alpha : threshold for test statistic (probability, smaller is more stringent)
@@ -72,55 +72,26 @@ def stratification_test(radii, volumes, ws=10, alpha=1e-3):
 
     return None # No stratifications found
 
-parser = argparse.ArgumentParser(description='Estimate local geometric and topological properties of an LLM embedding')
-parser.add_argument('filename',
-                    help='File to parse.')
-parser.add_argument('--path',
-                    default='/media/TerraSAR-X/ER/data/20240119_embeddings',
-                    help='Path to embedding file.  Output is to current directory.')
-parser.add_argument('--no-miller',
-                    dest='miller',
-                    help='Disable Miller debiasing of scaling coefficient.',
-                    action='store_false')
-parser.add_argument('--ricci',
-                    help='Compute Ricci curvature.',
-                    action='store_true')
-parser.add_argument('--vol-min',
-                    help='Minimum volume to use for estimation.',
-                    type=int,
-                    default=10)
-parser.add_argument('--vol-max',
-                    help='Maximum volume to use for estimation.',
-                    type=int,
-                    default=50)
-args=parser.parse_args()
+def estimate_stratifications(dists_sorted, vol_min, vol_max, npts, args, ws=10, alpha=1e-3):
+    '''
+    Detect and report stratification properties given radii to neighboring points
 
-print(args)
+    Inputs: dists_sorted : np.array of radius values (assumed to be sorted in ascending order)
+            vol_min,vol_max : minimum and maximum number of points to be used
+            npts    : total number of points in the dataset (used to normalize scaling coefficient)
+            args.nstrat : integer, maximum number of stratifications to detect
+            args.miller : Boolean, if True use Miller debiasing
+            args.ricci : Boolean, if True estimate Ricci curvature, else set to zero
+            ws : window size, defaults to 10 samples
+            alpha : threshold for test statistic (probability, smaller is more stringent)
 
-vol_min = args.vol_min # minimum number of points in ball for linear regression
-vol_max = args.vol_max # maximum number of points in ball for linear regression
-
-# Load data
-coords = torch.load(args.path+'/embeddings_'+args.filename+'.pt',map_location='cpu').to(dtype=torch.float16).numpy()
-
-# Compute distance matrix
-dists = scipy.spatial.distance_matrix(coords,coords)
-npts = dists.shape[0]
-
-# Each column is a point; rows are distances to other points, in order
-dists_sorted = np.sort(dists,axis=0)
-
-np.savetxt('distsubset_'+args.filename+'.csv',
-           dists_sorted[:,0:100],
-           header='',
-           delimiter=',',
-           comments = '') # Remove the silly `#` on the header line
-
-# Preallocate output data
-pointwise_data = np.zeros((npts,8))
-
-# Loop over each point (so that each point gets its own vector of radii)
-for i in range(dists_sorted.shape[1]):
+    Output: a dictionary with keys:
+            'scaling_coeffs' : list of scaling coefficient estimates
+            'dimensions' : list of dimension estimates
+            'riccis' : list of Ricci estimates
+            'strat_radii' : list of radii at which stratifications were detected
+            'strat_volumes' : list of volumes at which stratifications were detected
+    '''
 
     # Distances to nearest points
     radii = dists_sorted[vol_min:vol_max,i]
@@ -128,41 +99,148 @@ for i in range(dists_sorted.shape[1]):
     # Number of points within each radius (proportional to volume)
     volumes = np.arange(vol_min,vol_max)
 
-    strat_idx = stratification_test(radii, volumes)
+    # Prepare output lists
+    output = dict()
+    output['scaling_coeffs'] = []
+    output['dimensions'] = []
+    output['riccis'] = []
+    output['strat_radii'] = []
+    output['strat_volumes'] = []
 
-    if strat_idx is None:
-        scaling_coeff_1,dimension_1,ricci_1 = geo_estimator(radii,volumes,npts,args)
-        scaling_coeff_2,dimension_2,ricci_2 = 0., 0., 0.
+    # Start of window for detecting stratifications
+    vol_min_current = 1
 
-        strat_idx = -1
-        strat_radius = -1.
+    for strat_number in range(args.nstrat):
+        # End of window for detecting stratifications is end of data
+        vol_max_current = radii.shape[0]
 
-    else:
-        scaling_coeff_1,dimension_1,ricci_1 = geo_estimator(radii[vol_min:strat_idx], volumes[vol_min:strat_idx], npts, args)
-        scaling_coeff_2,dimension_2,ricci_2 = geo_estimator(radii[strat_idx:vol_max], volumes[strat_idx:vol_max], npts, args)
+        # Detect first stratification within window
+        strat_idx = stratification_test(radii[vol_min_current:vol_max_current],
+                                        volumes[vol_min_current:vol_max_current])
 
-        strat_radius = radii[strat_idx]
+        # If stratification is detected, update the end of the window.
+        # Otherwise the window stays as is
+        if strat_idx is not None:
+            vol_max_current = strat_idx
 
-    # Format output
-    pointwise_data[i,:] = np.array((scaling_coeff_1,
-                                    dimension_1,
-                                    ricci_1,
-                                    strat_idx, strat_radius,
-                                    scaling_coeff_2,
-                                    dimension_2,
-                                    ricci_2))
+        # Estimate geometry of this stratification
+        scaling_coeff,dimension,ricci = geo_estimator(radii[vol_min_current:vol_max_current],
+                                                      volumes[vol_min_current:vol_max_current],
+                                                      npts,args)
 
-   
-# Save results
-outfile = 'embeddings_'+args.filename+'_loglog_regressions'
-if args.miller:
-    outfile = outfile+'_miller'
-if args.ricci:
-    outfile = outfile+'_ricci'
-outfile = outfile+ '.csv'
+        # Store output
+        output['scaling_coeffs'].append(scaling_coeff)
+        output['dimensions'].append(dimension)
+        output['riccis'].ricci
+        
+        output['strat_volumes'].append(vol_min)
+        output['strat_radii'].append(radii[1])
 
-np.savetxt(outfile,
-           pointwise_data,
-           header='scaling_coeff_1,dimension_1,ricci_1,strat_idx,strat_radius,scaling_coeff_2,dimension_2,ricci_2',
-           delimiter=',',
-           comments = '') # Remove the silly `#` on the header line
+        # If no new stratifications were detected, exit the loop
+        if strat_idx is None:
+            break
+
+        # Otherwise update the start of the window to the location of the most recently found stratification
+        vol_min_current = strat_idx
+
+    return output
+
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(description='Estimate local geometric and topological properties of an LLM embedding')
+    parser.add_argument('filename',
+                        help='File to parse.')
+    parser.add_argument('--path',
+                        default='/media/TerraSAR-X/ER/data/20240119_embeddings',
+                        help='Path to embedding file.  Output is to current directory.')
+    parser.add_argument('--no-miller',
+                        dest='miller',
+                        help='Disable Miller debiasing of scaling coefficient.',
+                        action='store_false')
+    parser.add_argument('--ricci',
+                        help='Compute Ricci curvature.',
+                        action='store_true')
+    parser.add_argument('--vol-min',
+                        help='Minimum volume to use for estimation.',
+                        type=int,
+                        default=10)
+    parser.add_argument('--vol-max',
+                        help='Maximum volume to use for estimation.',
+                        type=int,
+                        default=50)
+    parser.add_argument('--nstrat',
+                        help='Maximum number of stratifications to detect.',
+                        type=int,
+                        default=3)
+
+    args=parser.parse_args()
+
+    print(args)
+
+    vol_min = args.vol_min # minimum number of points in ball for linear regression
+    vol_max = args.vol_max # maximum number of points in ball for linear regression
+
+    # Load data
+    coords = torch.load(args.path+'/embeddings_'+args.filename+'.pt',map_location='cpu').to(dtype=torch.float16).numpy()
+
+    # Compute distance matrix
+    dists = scipy.spatial.distance_matrix(coords,coords)
+    npts = dists.shape[0]
+
+    # Each column is a point; rows are distances to other points, in order
+    dists_sorted = np.sort(dists,axis=0)
+
+    np.savetxt('distsubset_'+args.filename+'.csv',
+               dists_sorted[:,0:100],
+               header='',
+               delimiter=',',
+               comments = '') # Remove the silly `#` on the header line
+
+    # Build filename for output
+    outfile = 'embeddings_'+args.filename+'_loglog_regressions'
+    if args.miller:
+        outfile = outfile+'_miller'
+    if args.ricci:
+        outfile = outfile+'_ricci'
+    outfile = outfile+ '.csv'
+
+    with open(outfile, 'wt') as fp:
+        # Produce header
+        for j in args.nstrat:
+            if j > 0:
+                fp.write(',')
+            fp.write('scaling_coeff_'+str(j+1)+
+                     ','+
+                     'dimension_'+str(j+1)+
+                     ','+
+                     'ricci_'+str(j+1)+
+                     ','+
+                     'strat_radius_'+str(j+1)
+                     ','+
+                     'strat_volume_'+str(j+1))
+        fp.write('\n')
+        
+        # Loop over each point (so that each point gets its own vector of radii)
+        for i in range(dists_sorted.shape[1]):
+
+            # Do the estimation
+            output = estimate_stratifications(dists_sorted, vol_min, vol_max, npts, args)
+
+            # Format output
+            for j in args.nstrat:
+                if j > 0:
+                    fp.write(',')
+                if j >= len(output['scaling_coeffs']):
+                    fp.write('-1,-1,-1,-1,-1')
+                else:
+                    fp.write(str(output['scaling_coeffs'][j])+
+                             ','+
+                             str(output['dimensions'][j])+
+                             ','+
+                             str(output['riccis'][j])+
+                             ','+
+                             str(output['strat_radii'][j])+
+                             ','+
+                             str(output['strat_volumes'][j]))
+            fp.write('\n')
