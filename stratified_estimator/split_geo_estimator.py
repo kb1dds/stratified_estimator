@@ -173,6 +173,9 @@ if __name__ == '__main__':
                         help='Maximum number of stratifications to detect.',
                         type=int,
                         default=3)
+    parser.add_argument('distfile',
+                        help='File containing sorted distances (optional; skips computing distance matrix)',
+                        default='')
 
     args=parser.parse_args()
 
@@ -181,21 +184,28 @@ if __name__ == '__main__':
     vol_min = args.vol_min # minimum number of points in ball for linear regression
     vol_max = args.vol_max # maximum number of points in ball for linear regression
 
-    # Load data
-    coords = torch.load(args.path+'/embeddings_'+args.filename+'.pt',map_location='cpu').to(dtype=torch.float16).numpy()
+    if args.distfile == '':
 
-    # Compute distance matrix
-    dists = scipy.spatial.distance_matrix(coords,coords)
-    npts = dists.shape[0]
+        # Load data
+        coords = torch.load(args.path+'/embeddings_'+args.filename+'.pt',map_location='cpu').to(dtype=torch.float16).numpy()
 
-    # Each column is a point; rows are distances to other points, in order
-    dists_sorted = np.sort(dists,axis=0)
+        # Compute distance matrix
+        dists = scipy.spatial.distance_matrix(coords,coords)
 
-    np.savetxt('distsubset_'+args.filename+'.csv',
-               dists_sorted[:,0:100],
-               header='',
-               delimiter=',',
-               comments = '') # Remove the silly `#` on the header line
+        # Each column is a point; rows are distances to other points, in order
+        dists_sorted = np.sort(dists,axis=0)
+
+        np.savetxt('distsubset_'+args.filename+'.csv',
+                   dists_sorted[:,0:100],
+                   header='',
+                   delimiter=',',
+                   comments = '') # Remove the silly `#` on the header line
+    else:
+        dists_sorted = np.loadtxt(args.distfile,
+                                  delimiter=',')
+
+    # Total number of points
+    npts = dists_sorted.shape[0]
 
     # Build filename for output
     outfile = 'embeddings_'+args.filename+'_loglog_regressions'
