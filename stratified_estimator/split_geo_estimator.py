@@ -222,19 +222,7 @@ if __name__ == '__main__':
 
     with open(outfile, 'wt') as fp:
         # Produce header
-        for j in range(args.nstrat):
-            if j > 0:
-                fp.write(',')
-            fp.write('scaling_coeff_'+str(j+1)+
-                     ','+
-                     'dimension_'+str(j+1)+
-                     ','+
-                     'ricci_'+str(j+1)+
-                     ','+
-                     'strat_radius_'+str(j+1)+
-                     ','+
-                     'strat_volume_'+str(j+1))
-        fp.write('\n')
+        fp.write('token_id,stratification_number,radius,volume,scaling_coeff,dimension,ricci\n')
         
         # Loop over each point (so that each point gets its own vector of radii)
         for i in range(dists_sorted.shape[1]):
@@ -243,19 +231,18 @@ if __name__ == '__main__':
             output = estimate_stratifications(dists_sorted[:,i], vol_min, vol_max, npts, args)
 
             # Format output
-            for j in range(args.nstrat):
-                if j > 0:
-                    fp.write(',')
-                if j >= len(output['scaling_coeffs']):
-                    fp.write('-1,-1,-1,-1,-1')
-                else:
-                    fp.write(str(output['scaling_coeffs'][j])+
-                             ','+
-                             str(output['dimensions'][j])+
-                             ','+
-                             str(output['riccis'][j])+
-                             ','+
-                             str(output['strat_radii'][j])+
-                             ','+
-                             str(output['strat_volumes'][j]))
-            fp.write('\n')
+            for j in range(len(output['scaling_coeffs'])):
+                fp.write(str(i)+
+                         ','+
+                         str(j)+
+                         ','+
+                         str(output['strat_radii'][j])+
+                         ','+
+                         str(output['strat_volumes'][j])+
+                         ','+
+                         str(output['scaling_coeffs'][j])+
+                         ','+
+                         str(output['dimensions'][j])+
+                         ','+
+                         str(output['riccis'][j]))
+                fp.write('\n')
