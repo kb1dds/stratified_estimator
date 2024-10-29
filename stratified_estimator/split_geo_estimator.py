@@ -107,8 +107,8 @@ def estimate_stratifications(dists_sorted, vol_min, vol_max, npts, args, ws=10, 
     output['strat_radii'] = []
     output['strat_volumes'] = []
 
-    # Start of window for detecting stratifications
-    vol_min_current = 1
+    # Start of window for detecting stratifications, avoiding zero radii
+    vol_min_current = np.argmax(radii>1e-10)
 
     for strat_number in range(args.nstrat):
         # End of window for detecting stratifications is end of data
