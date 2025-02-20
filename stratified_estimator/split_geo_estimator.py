@@ -118,7 +118,9 @@ def estimate_stratifications(dists_sorted, vol_min, vol_max, npts, args, ws=10, 
 
         # Detect first stratification within window
         strat_idx = stratification_test(radii[vol_min_current:vol_max_current],
-                                        volumes[vol_min_current:vol_max_current])
+                                        volumes[vol_min_current:vol_max_current],
+                                        ws,
+                                        alpha)
 
         # If stratification is detected, update the end of the window.
         # Otherwise the window stays as is
