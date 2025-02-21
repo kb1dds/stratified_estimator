@@ -55,11 +55,16 @@ def stratification_test(radii, volumes, ws=10, alpha=1e-3):
     Inputs: radii : np.array of radius values (assumed to be sorted in ascending order)
             volumes : np.array of volume values
             ws : window size, defaults to 10 samples
-            alpha : threshold for test statistic (probability, smaller is more stringent)
+            alpha : instantaneous false alarm rate for test (probability, smaller is more stringent)
     
     Output: index into radii or None if no stratification found
     
     Test compares the dimension estimates in [-2*ws,-ws] versus [ws,2*ws]
+
+    Note: Since this is a multiple testing scenario, one should apply a correction to alpha
+          Because the tests run across sliding windows, they are highly correlated, which will
+          make Bonferroni much too restrictive.  Therefore, any desired correction should be
+          applied outside of this function!
     '''
     
     # Pointwise dimension estimates (noisy but fast)
@@ -67,7 +72,7 @@ def stratification_test(radii, volumes, ws=10, alpha=1e-3):
 
     # Run the test
     for w in range(2*ws,dimvec.shape[0]-2*ws):
-        if scipy.stats.ttest_ind(dimvec[w-2*ws:w-ws],dimvec[w+ws:w+2*ws],equal_var=False).pvalue < alpha/(dimvec.shape[0]-4*ws):
+        if scipy.stats.ttest_ind(dimvec[w-2*ws:w-ws],dimvec[w+ws:w+2*ws],equal_var=False).pvalue < alpha:
             return w
 
     return None # No stratifications found
@@ -83,7 +88,7 @@ def estimate_stratifications(dists_sorted, vol_min, vol_max, npts, args, ws=10, 
             args.miller : Boolean, if True use Miller debiasing
             args.ricci : Boolean, if True estimate Ricci curvature, else set to zero
             ws : window size, defaults to 10 samples
-            alpha : threshold for test statistic (probability, smaller is more stringent)
+            alpha : false alarm rate for test (probability, smaller is more stringent)
 
     Output: a dictionary with keys:
             'scaling_coeffs' : list of scaling coefficient estimates
@@ -117,10 +122,12 @@ def estimate_stratifications(dists_sorted, vol_min, vol_max, npts, args, ws=10, 
         # print('Looking for stratifications between: ' + str(vol_min_current) + ' to ' + str(vol_max_current))
 
         # Detect first stratification within window
+        # Note the multiple test correction applied to the threshold based upon expected number of strata;
+        # We assume that adjacent windows within a stratum are highly correlated.
         strat_idx = stratification_test(radii[vol_min_current:vol_max_current],
                                         volumes[vol_min_current:vol_max_current],
                                         ws,
-                                        alpha)
+                                        alpha/args.nstrat)
 
         # If stratification is detected, update the end of the window.
         # Otherwise the window stays as is
