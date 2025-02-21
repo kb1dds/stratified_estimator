@@ -67,7 +67,7 @@ def stratification_test(radii, volumes, ws=10, alpha=1e-3):
 
     # Run the test
     for w in range(2*ws,dimvec.shape[0]-2*ws):
-        if scipy.stats.ttest_ind(dimvec[w-2*ws:w-ws],dimvec[w+ws:w+2*ws],equal_var=False).pvalue < alpha:
+        if scipy.stats.ttest_ind(dimvec[w-2*ws:w-ws],dimvec[w+ws:w+2*ws],equal_var=False).pvalue < alpha/(dimvec.shape[0]-4*ws):
             return w
 
     return None # No stratifications found
