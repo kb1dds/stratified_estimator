@@ -77,7 +77,7 @@ def stratification_test(radii, volumes, ws=10, alpha=1e-3):
             ws : window size, defaults to 10 samples
             alpha : instantaneous false alarm rate for test (probability, smaller is more stringent)
     
-    Output: index into radii or None if no stratification found
+    Output: (index,pvalue) into radii or None if no stratification found and p-value of test
     
     Test compares the dimension estimates in [-2*ws,-ws] versus [ws,2*ws]
 
@@ -92,10 +92,11 @@ def stratification_test(radii, volumes, ws=10, alpha=1e-3):
 
     # Run the test
     for w in range(2*ws,dimvec.shape[0]-2*ws):
-        if scipy.stats.ttest_ind(dimvec[w-2*ws:w-ws],dimvec[w+ws:w+2*ws],equal_var=False).pvalue < alpha:
-            return w
+        pvalue = scipy.stats.ttest_ind(dimvec[w-2*ws:w-ws],dimvec[w+ws:w+2*ws],equal_var=False).pvalue
+        if pvalue < alpha:
+            return w,pvalue
 
-    return None # No stratifications found
+    return None,1.0 # No stratifications found
 
 def estimate_stratifications(dists_sorted, vol_min, vol_max, npts, args, ws=10, alpha=1e-3):
     '''
@@ -116,6 +117,7 @@ def estimate_stratifications(dists_sorted, vol_min, vol_max, npts, args, ws=10, 
             'riccis' : list of Ricci estimates
             'strat_radii' : list of radii at which stratifications were detected
             'strat_volumes' : list of volumes at which stratifications were detected
+            'pvalues' : list of p-values for each stratification detected
     '''
 
     # Distances to nearest points
@@ -131,6 +133,7 @@ def estimate_stratifications(dists_sorted, vol_min, vol_max, npts, args, ws=10, 
     output['riccis'] = []
     output['strat_radii'] = []
     output['strat_volumes'] = []
+    output['pvalues'] = []
 
     # Start of window for detecting stratifications, avoiding zero radii
     vol_min_current = np.argmax(radii>1e-10)
@@ -144,10 +147,10 @@ def estimate_stratifications(dists_sorted, vol_min, vol_max, npts, args, ws=10, 
         # Detect first stratification within window
         # Note the multiple test correction applied to the threshold based upon expected number of strata;
         # We assume that adjacent windows within a stratum are highly correlated.
-        strat_idx = stratification_test(radii[vol_min_current:vol_max_current],
-                                        volumes[vol_min_current:vol_max_current],
-                                        ws,
-                                        alpha/args.nstrat)
+        strat_idx,pvalue = stratification_test(radii[vol_min_current:vol_max_current],
+                                               volumes[vol_min_current:vol_max_current],
+                                               ws,
+                                               alpha/args.nstrat)
 
         # If stratification is detected, update the end of the window.
         # Otherwise the window stays as is
@@ -169,6 +172,7 @@ def estimate_stratifications(dists_sorted, vol_min, vol_max, npts, args, ws=10, 
         
         output['strat_volumes'].append(vol_min+vol_min_current)
         output['strat_radii'].append(radii[vol_min_current])
+        output['pvalues'].append(pvalue)
 
         # If no new stratifications were detected, exit the loop
         if strat_idx is None:
@@ -251,7 +255,7 @@ if __name__ == '__main__':
 
     with open(outfile, 'wt') as fp:
         # Produce header
-        fp.write('token_id,stratification_number,radius,volume,scaling_coeff,dimension,ricci\n')
+        fp.write('token_id,stratification_number,radius,volume,scaling_coeff,dimension,ricci,pvalue\n')
         
         # Loop over each point (so that each point gets its own vector of radii)
         for i in range(dists_sorted.shape[1]):
@@ -273,5 +277,7 @@ if __name__ == '__main__':
                          ','+
                          str(output['dimensions'][j])+
                          ','+
-                         str(output['riccis'][j]))
+                         str(output['riccis'][j])+
+                         ','+
+                         str(output['pvalues'][j]))
                 fp.write('\n')
