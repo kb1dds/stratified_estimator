@@ -73,10 +73,10 @@ if __name__ == '__main__':
         # Loop over each point (so that each point gets its own vector of radii)
         for i in range(coords.shape[0]):
             # Compute the distance between the center and this point
-            distance = np.sqrt(np.sum(np.abs(coords[i]-center)**2));
+            distance = np.sqrt(np.sum(np.abs(coords[i,:]-center)**2));
 
             # Selection
-            if( distance >= args.rad_min ) and (distance < args.rad_max):
+            if(( distance >= args.rad_min ) and (distance < args.rad_max)):
                 fp.write(str(i))
                 for j in range(coords.shape[1]):
                     fp.write(','+str(coords[i,j]))
