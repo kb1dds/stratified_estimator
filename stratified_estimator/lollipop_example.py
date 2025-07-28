@@ -32,11 +32,11 @@ from stratified_estimator.split_geo_estimator import estimate_stratifications
 
 ### Parameter setup for the data
 n = 2       # Dimensions 
-spts = 2000 # number of points
+spts = 4000 # number of points
 
 ### Parameter setup for the test
 vol_min = 20
-vol_max = 100
+vol_max = 200
 
 class Args:
     nstrat = 3
@@ -45,7 +45,8 @@ class Args:
 
 args = Args()
 
-#### Do not alter below this line
+### Caution: relative densities (the spts/6 and 30/spts values) between the sphere and the stick cause problems as the number of points is varied.
+### Be careful and check log v/log r plots to ensure uniform sampling. The singularity at the glue point is very delicate, whereas the one on the end of the stick is less so.
 
 # Generate points on the sphere and a stick in n dimensions
 coords = np.random.randn(spts,n+1)
@@ -54,6 +55,8 @@ coords[:,0]=coords[:,0]-1
 stick = np.zeros((int(spts/6),n+1))
 stick[:,0]=np.linspace(0,5,int(spts/6))+(30/spts)*(np.random.random((int(spts/6),))-0.5)
 coords=np.vstack((coords,stick))
+
+#### Do not alter below this line
 
 # Compute distance matrix
 dists = scipy.spatial.distance_matrix(coords,coords)
