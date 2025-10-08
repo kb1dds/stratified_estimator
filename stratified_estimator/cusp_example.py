@@ -49,7 +49,7 @@ args = Args()
 ### Be careful and check log v/log r plots to ensure uniform sampling. 
 
 # Generate points on the sphere and a stick in n dimensions
-r=np.linspace(0,1,31)
+r=np.linspace(0,1,31)[1:]
 t=np.linspace(0,2*np.pi,41)[0:-1]
 rr,tt=np.meshgrid(r,t)
 rr=rr.flatten()[:,np.newaxis]
@@ -115,7 +115,7 @@ fig = go.Figure(data=[go.Scatter3d(x=coords[:,0],
                                    z=coords[:,2],
                                    mode='markers',
                                    marker=dict(size=5,
-                                               color=np.log10(pvalues),#[int(p<1e-3/npts) for p in pvalues], # Bonferroni correction
+                                               color=pvalues,#[int(p<1e-3/npts) for p in pvalues], # Bonferroni correction
                                                colorscale='Viridis',
                                                opacity=0.5))])
 fig.show()
