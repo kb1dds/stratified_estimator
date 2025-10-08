@@ -49,12 +49,12 @@ args = Args()
 ### Be careful and check log v/log r plots to ensure uniform sampling. 
 
 # Generate points on the sphere and a stick in n dimensions
-xs=np.linspace(-1,1,31)
-ys=np.linspace(-1,1,31)
-xx,yy=np.meshgrid(xs,ys)
-xx=xx.flatten()[:,np.newaxis]
-yy=yy.flatten()[:,np.newaxis]
-coords=np.hstack((xx,yy,-3*(xx**2+yy**2)**0.125))
+r=np.linspace(0,1,31)
+t=np.linspace(0,2*np.pi,41)[0:-1]
+rr,tt=np.meshgrid(r,t)
+rr=rr.flatten()[:,np.newaxis]
+tt=tt.flatten()[:,np.newaxis]
+coords=np.hstack((rr*np.cos(tt),rr*np.sin(tt),-3*rr**0.25))
 
 #### Do not alter below this line
 
