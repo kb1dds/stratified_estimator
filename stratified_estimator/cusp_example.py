@@ -35,8 +35,8 @@ n = 3       # Dimensions
 spts = 500 # number of points
 
 ### Parameter setup for the test
-vol_min = 10
-vol_max = 200
+vol_min = 20
+vol_max = 150
 
 class Args:
     nstrat = 3
@@ -67,10 +67,10 @@ dists_sorted = np.sort(dists,axis=0)
 # Total number of points
 npts = dists_sorted.shape[0]
 
-fig1=px.scatter(x=dists_sorted[vol_min:vol_max,int(npts/2)],y=1+np.arange(vol_min,vol_max),log_x=True,log_y=True)
-fig1.show()
+#fig1=px.scatter(x=dists_sorted[vol_min:vol_max,int(npts/2)],y=1+np.arange(vol_min,vol_max),log_x=True,log_y=True)
+#fig1.show()
 
-print(estimate_stratifications(dists_sorted[:,int(npts/2)], vol_min, vol_max, npts, args, ws=20, alpha=1e-1))
+#print(estimate_stratifications(dists_sorted[:,int(npts/2)], vol_min, vol_max, npts, args, ws=20, alpha=1e-1))
 
 #quite
 
