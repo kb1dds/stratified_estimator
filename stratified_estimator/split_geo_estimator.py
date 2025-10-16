@@ -16,10 +16,9 @@
 # the License.
 #
 # This material is based upon work supported by the Defense Advanced Research 
-# Projects Agency (DARPA) SafeDocs program under contract HR001119C0072. 
-# Any opinions, findings and conclusions or recommendations expressed in 
-# this material are those of the authors and do not necessarily reflect the 
-# views of DARPA.
+# Projects Agency (DARPA). Any opinions, findings and conclusions or
+# recommendations expressed in this material are those of the authors and
+# do not necessarily reflect the views of DARPA.
 
 import sys
 import argparse
@@ -92,7 +91,11 @@ def stratification_test(radii, volumes, ws=10, alpha=1e-3):
 
     # Run the test
     for w in range(2*ws,dimvec.shape[0]-2*ws):
-        pvalue = scipy.stats.ttest_ind(dimvec[w-2*ws:w-ws],dimvec[w+ws:w+2*ws],equal_var=False).pvalue
+        t1=dimvec[w-2*ws:w-ws]
+        t1=t1[np.logical_and(np.abs(t1) > 1e-5,np.isfinite(t1))]
+        t2=dimvec[w+ws:w+2*ws]
+        t2=t2[np.logical_and(np.abs(t2) > 1e-5,np.isfinite(t2))]
+        pvalue = scipy.stats.ttest_ind(t1,t2,equal_var=False).pvalue
         if pvalue < alpha:
             return w,pvalue
 
