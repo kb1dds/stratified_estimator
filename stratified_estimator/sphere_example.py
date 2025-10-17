@@ -16,10 +16,9 @@
 # the License.
 #
 # This material is based upon work supported by the Defense Advanced Research 
-# Projects Agency (DARPA) SafeDocs program under contract HR001119C0072. 
-# Any opinions, findings and conclusions or recommendations expressed in 
-# this material are those of the authors and do not necessarily reflect the 
-# views of DARPA.
+# Projects Agency (DARPA). Any opinions, findings and conclusions or
+# recommendations expressed in this material are those of the authors and
+# do not necessarily reflect the views of DARPA.
 
 import numpy as np
 import numpy.random
@@ -58,7 +57,7 @@ dists_sorted = np.sort(dists,axis=0)
 
 with open('sphere_example.csv', 'wt') as fp:
     # Produce header
-    fp.write('point,stratification_number,radius,volume,scaling_coeff,dimension,ricci,pvalue\n')
+    fp.write('x,y,z,stratification_number,radius,volume,scaling_coeff,dimension,ricci,pvalue\n')
     
     # Loop over each point (so that each point gets its own vector of radii)
     pvalues = []
@@ -71,7 +70,11 @@ with open('sphere_example.csv', 'wt') as fp:
         
         # Format output
         for j in range(len(output['scaling_coeffs'])):
-            fp.write(str(i)+
+            fp.write(str(coords[i,0])+
+                     ','+
+                     str(coords[i,1])+
+                     ','+
+                     str(coords[i,2])+
                      ','+
                      str(j)+
                      ','+
@@ -93,7 +96,7 @@ fig = go.Figure(data=[go.Scatter3d(x=coords[:,0],
                                    z=coords[:,2],
                                    mode='markers',
                                    marker=dict(size=12,
-                                               color=pvalues,
+                                               color=np.log10(pvalues),
                                                colorscale='Viridis',
                                                opacity=0.8))])
 fig.show()
