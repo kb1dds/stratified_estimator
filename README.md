@@ -1,6 +1,8 @@
 # stratified_estimator
 Estimating topological and geometric properties of stratified spaces from samples in Euclidean space
 
+Link to relevant paper: (accepted to NeurIPS 2025) <https://arxiv.org/abs/2504.01002>
+
 # Acknowledgment
 
 This material is based upon work supported by the Defense Advanced Research 
